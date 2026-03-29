@@ -1,0 +1,29 @@
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: lowercase;
+  flex-shrink: 0;
+}
+
+.working {
+  background: rgba(0, 212, 170, 0.12);
+  color: var(--green);
+}
+
+.idle {
+  background: var(--bg3);
+  color: var(--text3);
+}
+
+.reviewing {
+  background: rgba(74, 168, 255, 0.12);
+  color: var(--blue);
+}
+
+.blocked {
+  background: rgba(255, 92, 106, 0.12);
+  color: var(--red);
+}

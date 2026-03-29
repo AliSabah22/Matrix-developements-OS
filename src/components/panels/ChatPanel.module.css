@@ -1,0 +1,260 @@
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.agentSelector {
+  display: flex;
+  gap: 6px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  background: var(--bg2);
+}
+
+.agentSelector::-webkit-scrollbar {
+  height: 0;
+}
+
+.agentPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text2);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.agentPill:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.agentPillActive {
+  background: var(--bg3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.agentDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 40px;
+}
+
+.emptyName {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 12px;
+}
+
+.emptyRole {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.emptyPrompt {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 8px;
+}
+
+.messageRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.rowUser {
+  flex-direction: row-reverse;
+}
+
+.rowAgent {
+  flex-direction: row;
+}
+
+.messageGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 70%;
+}
+
+.rowUser .messageGroup {
+  align-items: flex-end;
+}
+
+.senderLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  padding: 0 4px;
+}
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubbleUser {
+  background: var(--accent);
+  color: #fff;
+}
+
+.bubbleAgent {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.userAvatarPlaceholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--bg4);
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.typingDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text3);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.inputArea {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.inputContainer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 10px 10px 10px 16px;
+  transition: border-color 0.15s;
+}
+
+.inputContainer:focus-within {
+  border-color: var(--accent);
+}
+
+.textarea {
+  flex: 1;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.textarea::placeholder {
+  color: var(--text3);
+}
+
+.sendButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.sendButton:hover:not(.sendDisabled) {
+  background: var(--accent2);
+}
+
+.sendDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

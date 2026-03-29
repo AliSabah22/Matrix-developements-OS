@@ -1,0 +1,148 @@
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  overflow-y: auto;
+}
+
+.logoMark {
+  padding: 0 16px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.sectionLabel {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 16px;
+  margin-bottom: 4px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+  margin-bottom: 24px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text2);
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  text-align: left;
+}
+
+.navItem:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.navItemActive {
+  background: rgba(108, 99, 255, 0.15);
+  color: var(--accent2);
+}
+
+.navItemActive:hover {
+  background: rgba(108, 99, 255, 0.2);
+  color: var(--accent2);
+}
+
+.navSymbol {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  flex: 1;
+}
+
+.dotRed {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+}
+
+.dotAmber {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+}
+
+.agentsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+  flex: 1;
+}
+
+.agentRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+
+.agentRow:hover {
+  background: var(--bg3);
+}
+
+.agentRowActive {
+  background: var(--bg3);
+  border-color: var(--border2);
+}
+
+.agentInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.agentName {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.agentStatus {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
