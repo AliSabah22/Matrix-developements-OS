@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTasks, updateTask } from '@/lib/db'
-import { createActivity } from '@/lib/db'
+import { getTaskById, updateTask, createActivity } from '@/lib/db'
 import { getAgent } from '@/lib/agents'
 
 const VALID_STATUSES = new Set(['active', 'done', 'blocked', 'review'])
@@ -13,24 +12,27 @@ export async function PATCH(
   const { id: rawId } = await params
   const id = parseInt(rawId, 10)
 
-  if (isNaN(id)) {
-    return NextResponse.json(
-      { error: 'Task id must be a number' },
-      { status: 400 }
-    )
+  if (isNaN(id) || id <= 0) {
+    return NextResponse.json({ error: 'Task id must be a positive integer' }, { status: 400 })
   }
 
   let body: Record<string, unknown>
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json(
-      { error: 'Invalid JSON in request body' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
   }
 
   const { status, output, title, priority } = body
+
+  if (
+    status === undefined &&
+    output === undefined &&
+    title === undefined &&
+    priority === undefined
+  ) {
+    return NextResponse.json({ error: 'Request body must include at least one field to update' }, { status: 400 })
+  }
 
   if (status !== undefined && (typeof status !== 'string' || !VALID_STATUSES.has(status))) {
     return NextResponse.json(
@@ -47,22 +49,15 @@ export async function PATCH(
   }
 
   if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
-    return NextResponse.json(
-      { error: 'title must be a non-empty string' },
-      { status: 400 }
-    )
-  }
-
-  // Load the existing task to get agent info and previous status
-  const existing = getTasks().find((t) => t.id === id)
-  if (!existing) {
-    return NextResponse.json(
-      { error: `Task ${id} not found` },
-      { status: 404 }
-    )
+    return NextResponse.json({ error: 'title must be a non-empty string' }, { status: 400 })
   }
 
   try {
+    const existing = getTaskById(id)
+    if (!existing) {
+      return NextResponse.json({ error: `Task ${id} not found` }, { status: 404 })
+    }
+
     const updated = updateTask(id, {
       ...(status !== undefined && { status: status as 'active' | 'done' | 'blocked' | 'review' }),
       ...(output !== undefined && typeof output === 'string' && { output }),
@@ -71,38 +66,29 @@ export async function PATCH(
     })
 
     if (!updated) {
-      return NextResponse.json(
-        { error: `Task ${id} not found` },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: `Task ${id} not found` }, { status: 404 })
     }
 
-    // Create activity entry when status changes to a terminal/notable state
     if (status !== undefined && status !== existing.status) {
-      let agent
+      let agentName: string
       try {
-        agent = getAgent(updated.agent_id)
+        agentName = getAgent(updated.agent_id).name
       } catch {
-        agent = { name: updated.agent_id }
+        agentName = updated.agent_id
       }
 
-      const taskTitle = updated.title
-
       if (status === 'done') {
-        createActivity(updated.agent_id, `${agent.name} completed: ${taskTitle}`, 'done')
+        createActivity(updated.agent_id, `${agentName} completed: ${updated.title}`, 'done')
       } else if (status === 'blocked') {
-        createActivity(updated.agent_id, `${agent.name} is blocked on: ${taskTitle}`, 'alert')
+        createActivity(updated.agent_id, `${agentName} is blocked on: ${updated.title}`, 'alert')
       } else if (status === 'review') {
-        createActivity(updated.agent_id, `${agent.name} submitted for review: ${taskTitle}`, 'updated')
+        createActivity(updated.agent_id, `${agentName} submitted for review: ${updated.title}`, 'updated')
       }
     }
 
     return NextResponse.json({ task: updated })
   } catch (error) {
-    console.error(`[PATCH /api/tasks/${id}] Error:`, error)
-    return NextResponse.json(
-      { error: 'Failed to update task' },
-      { status: 500 }
-    )
+    console.error(`[PATCH /api/tasks/${id}]`, error)
+    return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
   }
 }

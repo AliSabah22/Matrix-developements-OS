@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import styles from './Sidebar.module.css'
-import AgentAvatar from './ui/AgentAvatar'
 import type { Agent, AgentId, PanelId } from '@/types'
 
 interface SidebarProps {
@@ -13,21 +12,25 @@ interface SidebarProps {
   onAgentSelect: (agentId: AgentId) => void
 }
 
-const NAV_ITEMS: { id: PanelId; label: string; symbol: string }[] = [
-  { id: 'hq', label: 'HQ Overview', symbol: '◈' },
-  { id: 'chat', label: 'Chat Room', symbol: '⌘' },
-  { id: 'tasks', label: 'Tasks', symbol: '▦' },
-  { id: 'review', label: 'Review Board', symbol: '◉' },
+const NAV_ITEMS: { id: PanelId; label: string; icon: string }[] = [
+  { id: 'hq', label: 'HQ Overview', icon: '⬡' },
+  { id: 'chat', label: 'Chat Room', icon: '◎' },
+  { id: 'tasks', label: 'Tasks', icon: '▤' },
+  { id: 'review', label: 'Review Board', icon: '◈' },
 ]
 
-const AGENT_STATUSES: Record<AgentId, { text: string; active: boolean }> = {
-  ceo: { text: 'Strategy mode', active: true },
-  coo: { text: 'Planning sprint', active: true },
-  cto: { text: 'Architecting', active: true },
-  cmo: { text: 'Building GTM', active: false },
-  cpo: { text: 'Writing specs', active: true },
-  cfo: { text: 'Modeling costs', active: false },
-  engineer: { text: 'Building', active: true },
+const AGENT_STATUSES: Record<AgentId, { text: string; state: 'active' | 'busy' | 'idle' }> = {
+  ceo: { text: 'Strategy mode', state: 'active' },
+  coo: { text: 'Planning sprint', state: 'active' },
+  cto: { text: 'Architecting', state: 'active' },
+  cmo: { text: 'Building GTM', state: 'idle' },
+  cpo: { text: 'Writing specs', state: 'active' },
+  cfo: { text: 'Modeling costs', state: 'busy' },
+  engineer: { text: 'Building', state: 'active' },
+}
+
+const INITIALS: Record<AgentId, string> = {
+  ceo: 'C', coo: 'O', cto: 'T', cmo: 'M', cpo: 'P', cfo: 'F', engineer: 'E',
 }
 
 export default function Sidebar({
@@ -53,15 +56,6 @@ export default function Sidebar({
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.logoMark}>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <rect x="1" y="1" width="8" height="8" rx="2" fill="var(--accent2)" />
-          <rect x="11" y="1" width="8" height="8" rx="2" fill="var(--accent)" opacity="0.6" />
-          <rect x="1" y="11" width="8" height="8" rx="2" fill="var(--accent)" opacity="0.4" />
-          <rect x="11" y="11" width="8" height="8" rx="2" fill="var(--accent2)" opacity="0.8" />
-        </svg>
-      </div>
-
       <nav className={styles.nav}>
         <span className={styles.sectionLabel}>Navigate</span>
         {NAV_ITEMS.map((item) => (
@@ -70,36 +64,57 @@ export default function Sidebar({
             className={`${styles.navItem} ${activePanel === item.id ? styles.navItemActive : ''}`}
             onClick={() => onPanelChange(item.id)}
           >
-            <span className={styles.navSymbol}>{item.symbol}</span>
+            <span className={`${styles.navIcon} ${activePanel === item.id ? styles.navIconActive : ''}`}>
+              {item.icon}
+            </span>
             <span className={styles.navLabel}>{item.label}</span>
             {item.id === 'tasks' && reviewCount > 0 && (
-              <span className={styles.dotRed} />
+              <span className={`${styles.notifDot} ${styles.dotRed}`} />
             )}
             {item.id === 'review' && reviewCount > 0 && (
-              <span className={styles.dotAmber} />
+              <span className={`${styles.notifDot} ${styles.dotAmber}`} />
             )}
           </button>
         ))}
       </nav>
 
       <div className={styles.agentsSection}>
+        <div className={styles.agentsDivider} />
         <span className={styles.sectionLabel}>Agents</span>
         {agents.map((agent) => {
           const status = AGENT_STATUSES[agent.id]
+          const isActive = activeAgent === agent.id && activePanel === 'chat'
           return (
             <button
               key={agent.id}
-              className={`${styles.agentRow} ${activeAgent === agent.id && activePanel === 'chat' ? styles.agentRowActive : ''}`}
+              className={`${styles.agentRow} ${isActive ? styles.agentRowActive : ''}`}
               onClick={() => onAgentSelect(agent.id)}
             >
-              <AgentAvatar agentId={agent.id} color={agent.color} size={28} />
+              <div
+                className={styles.agentAvatar}
+                style={{
+                  backgroundColor: `${agent.color}26`,
+                  color: agent.color,
+                }}
+              >
+                {INITIALS[agent.id]}
+              </div>
               <div className={styles.agentInfo}>
                 <span className={styles.agentName}>{agent.name}</span>
-                <span className={styles.agentStatus}>{status?.text ?? 'online'}</span>
+                <span className={styles.agentStatusText}>{status?.text ?? 'online'}</span>
               </div>
               <span
                 className={styles.statusDot}
-                style={{ background: status?.active ? 'var(--green)' : 'var(--amber)' }}
+                style={{
+                  background:
+                    status?.state === 'active' ? 'var(--green)'
+                    : status?.state === 'busy' ? 'var(--amber)'
+                    : 'var(--text4)',
+                  boxShadow:
+                    status?.state === 'active' ? '0 0 8px var(--green-dim)'
+                    : status?.state === 'busy' ? '0 0 8px var(--amber-dim)'
+                    : 'none',
+                }}
               />
             </button>
           )

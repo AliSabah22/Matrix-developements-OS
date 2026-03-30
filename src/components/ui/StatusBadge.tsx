@@ -1,8 +1,7 @@
 'use client'
 
 import styles from './StatusBadge.module.css'
-
-type BadgeStatus = 'working' | 'idle' | 'reviewing' | 'blocked'
+import type { BadgeStatus } from '@/types'
 
 interface StatusBadgeProps {
   status: BadgeStatus

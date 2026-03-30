@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAgent } from '@/lib/agents'
+import { getAgent, VALID_AGENT_IDS } from '@/lib/agents'
 import { sendMessage } from '@/lib/anthropic'
-import {
-  getConversation,
-  saveMessage,
-  createActivity,
-  ConversationRow,
-} from '@/lib/db'
+import { getConversation, saveMessage, createActivity, ConversationRow } from '@/lib/db'
+
+const MAX_MESSAGE_LENGTH = 4000
 
 interface ChatRequestBody {
   agentId: string
@@ -19,37 +16,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json(
-      { error: 'Invalid JSON in request body' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
   }
 
   const { agentId, message } = body
 
-  if (!agentId || typeof agentId !== 'string') {
-    return NextResponse.json(
-      { error: 'agentId is required and must be a string' },
-      { status: 400 }
-    )
+  if (!agentId || typeof agentId !== 'string' || !VALID_AGENT_IDS.has(agentId)) {
+    return NextResponse.json({ error: 'Invalid agent ID' }, { status: 400 })
   }
 
   if (!message || typeof message !== 'string' || message.trim() === '') {
+    return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+  }
+
+  const trimmed = message.trim()
+
+  if (trimmed.length > MAX_MESSAGE_LENGTH) {
     return NextResponse.json(
-      { error: 'message is required and must be a non-empty string' },
+      { error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` },
       { status: 400 }
     )
   }
 
-  let agent
-  try {
-    agent = getAgent(agentId)
-  } catch {
-    return NextResponse.json(
-      { error: `Unknown agent: ${agentId}` },
-      { status: 400 }
-    )
-  }
+  const agent = getAgent(agentId)
 
   try {
     const history = getConversation(agentId)
@@ -58,27 +47,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       content: row.content,
     }))
 
-    const response = await sendMessage(
-      agent.systemPrompt,
-      historyForApi,
-      message.trim()
-    )
+    const response = await sendMessage(agent.systemPrompt, historyForApi, trimmed)
 
-    saveMessage(agentId, 'user', message.trim())
+    saveMessage(agentId, 'user', trimmed)
     saveMessage(agentId, 'assistant', response)
 
     createActivity(
       agentId,
-      `Responded to: "${message.trim().slice(0, 80)}${message.trim().length > 80 ? '...' : ''}"`,
+      `Responded to: "${trimmed.slice(0, 80)}${trimmed.length > 80 ? '...' : ''}"`,
       'updated'
     )
 
     return NextResponse.json({ response, agentId })
   } catch (error) {
-    console.error(`[chat] Error from agent ${agentId}:`, error)
+    console.error('[agents/chat]', error)
     return NextResponse.json(
-      { error: 'Failed to get response from AI. Check server logs for details.' },
-      { status: 500 }
+      { error: 'Agent unavailable — try again' },
+      { status: 502 }
     )
   }
 }

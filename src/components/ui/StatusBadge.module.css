@@ -2,28 +2,35 @@
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
-  padding: 2px 8px;
+  height: 24px;
+  padding: 0 10px;
   border-radius: 20px;
   text-transform: lowercase;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .working {
-  background: rgba(0, 212, 170, 0.12);
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
   color: var(--green);
 }
 
 .idle {
   background: var(--bg3);
+  border: 1px solid var(--border);
   color: var(--text3);
 }
 
 .reviewing {
-  background: rgba(74, 168, 255, 0.12);
+  background: var(--blue-dim);
+  border: 1px solid var(--blue-border);
   color: var(--blue);
 }
 
 .blocked {
-  background: rgba(255, 92, 106, 0.12);
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
   color: var(--red);
 }

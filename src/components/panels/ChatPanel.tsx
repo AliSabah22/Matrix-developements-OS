@@ -28,7 +28,6 @@ export default function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Apply preFill when it arrives
   useEffect(() => {
     if (preFill) {
       setInput(preFill)
@@ -37,12 +36,10 @@ export default function ChatPanel({
     }
   }, [preFill, onPreFillConsumed])
 
-  // Scroll to bottom when messages change or active agent changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [history, activeAgent, loading])
 
-  // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
@@ -69,6 +66,12 @@ export default function ChatPanel({
       [activeAgent]: [...(prev[activeAgent] ?? []), userMsg],
     }))
     setInput('')
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    }
+
     setLoading(true)
 
     try {
@@ -79,7 +82,8 @@ export default function ChatPanel({
       })
 
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`)
+        const errData = (await res.json()) as { error?: string }
+        throw new Error(errData.error ?? `HTTP ${res.status}`)
       }
 
       const data = (await res.json()) as { response: string }
@@ -99,9 +103,10 @@ export default function ChatPanel({
       console.error('[ChatPanel] send error:', err)
       const errMsg: Message = {
         role: 'assistant',
-        content: 'Something went wrong. Please try again.',
+        content: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
         agentId: activeAgent,
         timestamp: new Date().toISOString(),
+        isError: true,
       }
       setHistory((prev) => ({
         ...prev,
@@ -121,7 +126,6 @@ export default function ChatPanel({
 
   return (
     <div className={styles.panel}>
-      {/* Agent selector */}
       <div className={styles.agentSelector}>
         {agents.map((agent) => (
           <button
@@ -135,7 +139,6 @@ export default function ChatPanel({
         ))}
       </div>
 
-      {/* Message list */}
       <div className={styles.messageList}>
         {currentMessages.length === 0 && !loading ? (
           <div className={styles.emptyState}>
@@ -163,7 +166,15 @@ export default function ChatPanel({
                   <span className={styles.senderLabel}>
                     {isUser ? 'You' : agent?.name ?? msg.agentId}
                   </span>
-                  <div className={`${styles.bubble} ${isUser ? styles.bubbleUser : styles.bubbleAgent}`}>
+                  <div
+                    className={`${styles.bubble} ${
+                      isUser
+                        ? styles.bubbleUser
+                        : msg.isError
+                        ? styles.bubbleError
+                        : styles.bubbleAgent
+                    }`}
+                  >
                     {msg.content}
                   </div>
                 </div>
@@ -196,7 +207,6 @@ export default function ChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
       <div className={styles.inputArea}>
         <span className={styles.inputLabel}>
           Chatting with: {currentAgent?.name ?? activeAgent}

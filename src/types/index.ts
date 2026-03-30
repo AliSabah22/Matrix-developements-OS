@@ -2,6 +2,8 @@ export type AgentId = 'ceo' | 'coo' | 'cto' | 'cmo' | 'cpo' | 'cfo' | 'engineer'
 
 export type PanelId = 'hq' | 'chat' | 'tasks' | 'review'
 
+export type BadgeStatus = 'working' | 'idle' | 'reviewing' | 'blocked'
+
 export interface Agent {
   id: AgentId
   name: string
@@ -14,6 +16,7 @@ export interface Message {
   content: string
   agentId: AgentId
   timestamp: string
+  isError?: boolean
 }
 
 export interface Task {

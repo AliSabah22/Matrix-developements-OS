@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './TasksPanel.module.css'
 import TaskItem from '@/components/ui/TaskItem'
 import Modal from '@/components/ui/Modal'
@@ -21,7 +21,7 @@ const FILTERS: { id: FilterId; label: string }[] = [
 ]
 
 const EMPTY_MESSAGES: Record<FilterId, string> = {
-  all: 'No tasks yet — create your first task',
+  all: 'No tasks yet — create one to get started',
   active: 'No active tasks',
   done: 'Nothing completed yet',
   blocked: 'No blocked tasks',
@@ -31,21 +31,36 @@ const EMPTY_MESSAGES: Record<FilterId, string> = {
 export default function TasksPanel({ agents }: TasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filter, setFilter] = useState<FilterId>('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [showModal, setShowModal] = useState(false)
 
-  // New task form state
   const [newTitle, setNewTitle] = useState('')
   const [newAgentId, setNewAgentId] = useState<AgentId>('ceo')
   const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium')
   const [newContext, setNewContext] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
+  const fetchTasks = useCallback(() => {
     fetch('/api/tasks')
-      .then((r) => r.json())
-      .then((d: { tasks: Task[] }) => setTasks(d.tasks ?? []))
-      .catch((err) => console.error('[TasksPanel] load error:', err))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((d: { tasks: Task[] }) => {
+        setTasks(d.tasks ?? [])
+        setError(false)
+      })
+      .catch((err) => {
+        console.error('[TasksPanel] load error:', err)
+        setError(true)
+      })
+      .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter)
 
@@ -57,11 +72,17 @@ export default function TasksPanel({ agents }: TasksPanelProps) {
         body: JSON.stringify({ status }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as { task: Task }
-      setTasks((prev) => prev.map((t) => (t.id === id ? data.task : t)))
+      fetchTasks()
     } catch (err) {
       console.error('[TasksPanel] status change error:', err)
     }
+  }
+
+  const resetForm = () => {
+    setNewTitle('')
+    setNewAgentId('ceo')
+    setNewPriority('medium')
+    setNewContext('')
   }
 
   const handleCreateTask = async () => {
@@ -79,13 +100,9 @@ export default function TasksPanel({ agents }: TasksPanelProps) {
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as { task: Task }
-      setTasks((prev) => [data.task, ...prev])
       setShowModal(false)
-      setNewTitle('')
-      setNewAgentId('ceo')
-      setNewPriority('medium')
-      setNewContext('')
+      resetForm()
+      fetchTasks()
     } catch (err) {
       console.error('[TasksPanel] create task error:', err)
     } finally {
@@ -95,10 +112,7 @@ export default function TasksPanel({ agents }: TasksPanelProps) {
 
   const handleModalClose = () => {
     setShowModal(false)
-    setNewTitle('')
-    setNewAgentId('ceo')
-    setNewPriority('medium')
-    setNewContext('')
+    resetForm()
   }
 
   return (
@@ -112,14 +126,11 @@ export default function TasksPanel({ agents }: TasksPanelProps) {
               onClick={() => setFilter(f.id)}
             >
               {f.label}
-              {f.id !== 'all' && (
-                <span className={styles.filterCount}>
-                  {tasks.filter((t) => t.status === f.id).length}
-                </span>
-              )}
-              {f.id === 'all' && (
-                <span className={styles.filterCount}>{tasks.length}</span>
-              )}
+              <span className={styles.filterCount}>
+                {f.id === 'all'
+                  ? tasks.length
+                  : tasks.filter((t) => t.status === f.id).length}
+              </span>
             </button>
           ))}
         </div>
@@ -129,7 +140,11 @@ export default function TasksPanel({ agents }: TasksPanelProps) {
       </div>
 
       <div className={styles.taskList}>
-        {filtered.length === 0 ? (
+        {error ? (
+          <p className={styles.errorMsg}>Failed to load tasks — refresh to retry</p>
+        ) : loading ? (
+          <p className={styles.empty}>Loading...</p>
+        ) : filtered.length === 0 ? (
           <p className={styles.empty}>{EMPTY_MESSAGES[filter]}</p>
         ) : (
           filtered.map((task) => (
@@ -153,7 +168,7 @@ export default function TasksPanel({ agents }: TasksPanelProps) {
               Cancel
             </button>
             <button
-              className={`${styles.submitBtn} ${submitting ? styles.submitDisabled : ''}`}
+              className={`${styles.submitBtn} ${submitting || !newTitle.trim() ? styles.submitDisabled : ''}`}
               onClick={handleCreateTask}
               disabled={submitting || !newTitle.trim()}
             >

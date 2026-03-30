@@ -26,25 +26,33 @@ export default function Header({ agentCount }: HeaderProps) {
 
   return (
     <header className={styles.header}>
-      <div className={styles.logo}>
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <rect x="1" y="1" width="7" height="7" rx="2" fill="var(--accent2)" />
-          <rect x="10" y="1" width="7" height="7" rx="2" fill="var(--accent)" opacity="0.6" />
-          <rect x="1" y="10" width="7" height="7" rx="2" fill="var(--accent)" opacity="0.4" />
-          <rect x="10" y="10" width="7" height="7" rx="2" fill="var(--accent2)" opacity="0.8" />
-        </svg>
-        <span className={styles.logoText}>Company OS</span>
+      <div className={styles.left}>
+        <div className={styles.logoMark}>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect
+              x="2" y="6" width="16" height="16" rx="4"
+              fill="var(--accent)" opacity="0.9"
+              transform="rotate(-15 10 14)"
+            />
+            <rect
+              x="14" y="10" width="16" height="16" rx="4"
+              fill="var(--accent2)" opacity="0.7"
+              transform="rotate(-15 22 18)"
+            />
+          </svg>
+        </div>
+        <span className={styles.logoText}>Matrix Developements</span>
+        <div className={styles.divider} />
       </div>
 
       <div className={styles.right}>
         {agentCount > 0 && (
-          <div className={styles.agentStatus}>
+          <div className={styles.statusGroup}>
             <span className={styles.pulseDot} />
-            <span className={styles.agentLabel}>
-              {agentCount} agents active
-            </span>
+            <span className={styles.statusLabel}>{agentCount} agents active</span>
           </div>
         )}
+        <div className={styles.vDivider} />
         <span className={styles.clock}>{time}</span>
       </div>
     </header>

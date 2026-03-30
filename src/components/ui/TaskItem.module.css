@@ -1,36 +1,39 @@
 .item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-  transition: opacity 0.2s;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: opacity 0.2s, border-color 0.15s;
 }
 
-.item:last-child {
-  border-bottom: none;
+.item:hover {
+  border-color: var(--border2);
 }
 
 .item.done {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .checkbox {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   border: 1px solid var(--border2);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 2px;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  margin-top: 1px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
   color: #fff;
 }
 
 .checkbox:hover {
   border-color: var(--accent2);
+  transform: scale(1.05);
 }
 
 .checkbox.checked {
@@ -46,14 +49,15 @@
 .title {
   display: block;
   font-size: 14px;
+  font-weight: 500;
   color: var(--text);
-  margin-bottom: 6px;
-  line-height: 1.4;
+  margin-bottom: 8px;
+  line-height: 1.45;
 }
 
 .strikethrough {
   text-decoration: line-through;
-  color: var(--text3);
+  color: var(--text4);
 }
 
 .meta {
@@ -66,10 +70,11 @@
 .agentPill {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 2px 8px 2px 4px;
+  padding: 3px 8px 3px 5px;
 }
 
 .agentName {
@@ -81,39 +86,44 @@
 .priority {
   font-family: var(--font-mono);
   font-size: 10px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 20px;
 }
 
 .priority_high {
-  background: rgba(255, 92, 106, 0.1);
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
   color: var(--red);
 }
 
 .priority_medium {
-  background: rgba(245, 166, 35, 0.1);
+  background: var(--amber-dim);
+  border: 1px solid var(--amber-border);
   color: var(--amber);
 }
 
 .priority_low {
   background: var(--bg3);
+  border: 1px solid var(--border);
   color: var(--text3);
 }
 
 .blockedBadge {
   font-family: var(--font-mono);
   font-size: 10px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 20px;
-  background: rgba(255, 92, 106, 0.12);
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
   color: var(--red);
 }
 
 .reviewBadge {
   font-family: var(--font-mono);
   font-size: 10px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 20px;
-  background: rgba(74, 168, 255, 0.12);
+  background: var(--blue-dim);
+  border: 1px solid var(--blue-border);
   color: var(--blue);
 }

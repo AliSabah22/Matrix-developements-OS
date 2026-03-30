@@ -14,13 +14,20 @@ export default function Dashboard() {
   const [activePanel, setActivePanel] = useState<PanelId>('hq')
   const [activeAgent, setActiveAgent] = useState<AgentId>('ceo')
   const [agents, setAgents] = useState<Agent[]>([])
+  const [agentsError, setAgentsError] = useState(false)
   const [chatPreFill, setChatPreFill] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/agents/list')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((data: Agent[]) => setAgents(data))
-      .catch((err) => console.error('[Dashboard] failed to load agents:', err))
+      .catch((err) => {
+        console.error('[Dashboard] failed to load agents:', err)
+        setAgentsError(true)
+      })
   }, [])
 
   const handleRevise = (agentId: AgentId, message: string) => {
@@ -32,6 +39,14 @@ export default function Dashboard() {
   const handleNavigateToChat = (agentId: AgentId) => {
     setActiveAgent(agentId)
     setActivePanel('chat')
+  }
+
+  if (agentsError) {
+    return (
+      <div className={styles.errorFull}>
+        Failed to load agents — refresh to retry
+      </div>
+    )
   }
 
   return (

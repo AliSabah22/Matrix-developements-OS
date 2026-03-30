@@ -13,18 +13,41 @@ interface ReviewPanelProps {
 export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
   const [reviewTasks, setReviewTasks] = useState<Task[]>([])
   const [allTasks, setAllTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [approvingIds, setApprovingIds] = useState<Set<number>>(new Set())
 
   const load = useCallback(() => {
+    let reviewDone = false
+    let allDone = false
+
+    const checkDone = () => {
+      if (reviewDone && allDone) setLoading(false)
+    }
+
     fetch('/api/tasks?status=review')
-      .then((r) => r.json())
-      .then((d: { tasks: Task[] }) => setReviewTasks(d.tasks ?? []))
-      .catch((err) => console.error('[ReviewPanel] review tasks error:', err))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((d: { tasks: Task[] }) => {
+        setReviewTasks(d.tasks ?? [])
+        setError(false)
+      })
+      .catch((err) => {
+        console.error('[ReviewPanel] review tasks error:', err)
+        setError(true)
+      })
+      .finally(() => { reviewDone = true; checkDone() })
 
     fetch('/api/tasks')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((d: { tasks: Task[] }) => setAllTasks(d.tasks ?? []))
       .catch((err) => console.error('[ReviewPanel] all tasks error:', err))
+      .finally(() => { allDone = true; checkDone() })
   }, [])
 
   useEffect(() => {
@@ -41,9 +64,7 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setReviewTasks((prev) => prev.filter((t) => t.id !== task.id))
-      setAllTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, status: 'done' } : t))
-      )
+      setAllTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: 'done' as const } : t)))
     } catch (err) {
       console.error('[ReviewPanel] approve error:', err)
     } finally {
@@ -56,13 +77,12 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
   }
 
   const handleRevise = (task: Task) => {
-    const agent = agents.find((a) => a.id === task.agent_id)
-    const agentName = agent?.name ?? task.agent_id
-    onRevise(task.agent_id, `I need revisions on: ${task.title}\n\nPlease review your output for this task and improve it based on the following feedback:`)
-    void agentName
+    onRevise(
+      task.agent_id,
+      `I need revisions on: ${task.title}\n\nPlease review your output for this task and improve it based on the following feedback:`
+    )
   }
 
-  // Sprint health metrics
   const total = allTasks.length
   const done = allTasks.filter((t) => t.status === 'done').length
   const active = allTasks.filter((t) => t.status === 'active').length
@@ -74,12 +94,9 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
     ? Math.min(100, Math.round((active / agents.length) * 50))
     : 0
 
-  const getAgent = (agentId: AgentId) => agents.find((a) => a.id === agentId)
-
   return (
     <div className={styles.panel}>
       <div className={styles.layout}>
-        {/* Left column: tasks pending review */}
         <div className={styles.reviewColumn}>
           <div className={styles.columnHeader}>
             <span className={styles.columnTitle}>Pending Review</span>
@@ -87,13 +104,15 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
           </div>
 
           <div className={styles.taskList}>
-            {reviewTasks.length === 0 ? (
-              <div className={styles.empty}>
-                Nothing pending review — agents are working
-              </div>
+            {error ? (
+              <div className={styles.errorMsg}>Failed to load review tasks — refresh to retry</div>
+            ) : loading ? (
+              <div className={styles.empty}>Loading...</div>
+            ) : reviewTasks.length === 0 ? (
+              <div className={styles.empty}>Nothing pending review</div>
             ) : (
               reviewTasks.map((task) => {
-                const agent = getAgent(task.agent_id)
+                const agent = agents.find((a) => a.id === task.agent_id)
                 const approving = approvingIds.has(task.id)
                 return (
                   <div key={task.id} className={styles.reviewCard}>
@@ -119,7 +138,7 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
 
                     <div className={styles.cardActions}>
                       <button
-                        className={`${styles.reviseBtn}`}
+                        className={styles.reviseBtn}
                         onClick={() => handleRevise(task)}
                         disabled={approving}
                       >
@@ -140,7 +159,6 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
           </div>
         </div>
 
-        {/* Right column: Sprint Health */}
         <div className={styles.healthColumn}>
           <div className={styles.columnHeader}>
             <span className={styles.columnTitle}>Sprint Health</span>
@@ -153,10 +171,7 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
                 <span className={styles.healthPct}>{completionPct}%</span>
               </div>
               <div className={styles.bar}>
-                <div
-                  className={`${styles.barFill} ${styles.barGreen}`}
-                  style={{ width: `${completionPct}%` }}
-                />
+                <div className={`${styles.barFill} ${styles.barGreen}`} style={{ width: `${completionPct}%` }} />
               </div>
               <span className={styles.healthSub}>{done} of {total} tasks done</span>
             </div>
@@ -167,10 +182,7 @@ export default function ReviewPanel({ agents, onRevise }: ReviewPanelProps) {
                 <span className={styles.healthPct}>{onTrackPct}%</span>
               </div>
               <div className={styles.bar}>
-                <div
-                  className={`${styles.barFill} ${styles.barBlue}`}
-                  style={{ width: `${onTrackPct}%` }}
-                />
+                <div className={`${styles.barFill} ${styles.barBlue}`} style={{ width: `${onTrackPct}%` }} />
               </div>
               <span className={styles.healthSub}>{active} active, {blocked} blocked</span>
             </div>

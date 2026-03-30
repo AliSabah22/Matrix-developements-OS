@@ -1,50 +1,47 @@
 .sidebar {
-  width: 220px;
+  width: var(--sidebar-w);
   flex-shrink: 0;
   background: var(--bg2);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border2);
   display: flex;
   flex-direction: column;
-  padding: 16px 0;
+  padding: 20px 12px;
   overflow-y: auto;
 }
 
-.logoMark {
-  padding: 0 16px 20px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 16px;
+/* Navigation */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .sectionLabel {
   display: block;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--text3);
+  color: var(--text4);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0 16px;
-  margin-bottom: 4px;
-}
-
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 8px;
-  margin-bottom: 24px;
+  letter-spacing: 2px;
+  padding: 0 12px;
+  margin-bottom: 8px;
 }
 
 .navItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  gap: 12px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text2);
-  font-size: 13px;
-  transition: background 0.15s, color 0.15s;
-  position: relative;
+  transition: all 0.15s ease;
   text-align: left;
+  position: relative;
 }
 
 .navItem:hover {
@@ -53,87 +50,127 @@
 }
 
 .navItemActive {
-  background: rgba(108, 99, 255, 0.15);
+  background: var(--accent-dim);
+  border-color: var(--accent-glow);
   color: var(--accent2);
 }
 
 .navItemActive:hover {
-  background: rgba(108, 99, 255, 0.2);
+  background: var(--accent-dim);
   color: var(--accent2);
 }
 
-.navSymbol {
-  font-size: 14px;
-  width: 16px;
+.navIcon {
+  font-size: 18px;
+  width: 20px;
   text-align: center;
   flex-shrink: 0;
+  color: var(--text3);
+  transition: color 0.15s ease;
+}
+
+.navIconActive {
+  color: var(--accent);
 }
 
 .navLabel {
   flex: 1;
 }
 
-.dotRed {
-  width: 6px;
-  height: 6px;
+.notifDot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--red);
   flex-shrink: 0;
+}
+
+.dotRed {
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
 }
 
 .dotAmber {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
   background: var(--amber);
-  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--amber);
 }
 
+/* Agents section */
 .agentsSection {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0 8px;
   flex: 1;
+}
+
+.agentsDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
 }
 
 .agentRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 8px;
+  gap: 12px;
+  height: 56px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
+  transition: all 0.15s ease;
   text-align: left;
+  cursor: pointer;
 }
 
 .agentRow:hover {
   background: var(--bg3);
+  border-color: var(--border);
+  transform: none;
 }
 
 .agentRowActive {
-  background: var(--bg3);
+  background: var(--bg4);
   border-color: var(--border2);
+}
+
+.agentAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.agentRow:hover .agentAvatar {
+  transform: scale(1.05);
 }
 
 .agentInfo {
   flex: 1;
   min-width: 0;
+  max-width: 160px;
 }
 
 .agentName {
   display: block;
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
-  font-family: var(--font-display);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.agentStatus {
+.agentStatusText {
   display: block;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text3);
   white-space: nowrap;
   overflow: hidden;
@@ -141,8 +178,9 @@
 }
 
 .statusDot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-left: auto;
 }

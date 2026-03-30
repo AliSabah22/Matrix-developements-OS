@@ -1,18 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './HQPanel.module.css'
 import AgentAvatar from '@/components/ui/AgentAvatar'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { relativeTime } from '@/utils/time'
-import type { Agent, AgentId, Task, Activity } from '@/types'
+import type { Agent, AgentId, Task, Activity, BadgeStatus } from '@/types'
 
 interface HQPanelProps {
   agents: Agent[]
   onNavigateToChat: (agentId: AgentId) => void
 }
 
-const AGENT_BADGE_STATUS: Record<AgentId, 'working' | 'idle' | 'reviewing' | 'blocked'> = {
+const AGENT_BADGE_STATUS: Record<AgentId, BadgeStatus> = {
   ceo: 'working',
   coo: 'working',
   cto: 'reviewing',
@@ -42,24 +42,46 @@ function isToday(dateStr: string): boolean {
 export default function HQPanel({ agents, onNavigateToChat }: HQPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [activity, setActivity] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [tasksError, setTasksError] = useState(false)
+  const [activityError, setActivityError] = useState(false)
 
-  const load = () => {
+  const load = useCallback(() => {
     fetch('/api/tasks')
-      .then((r) => r.json())
-      .then((d: { tasks: Task[] }) => setTasks(d.tasks ?? []))
-      .catch((err) => console.error('[HQPanel] tasks error:', err))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((d: { tasks: Task[] }) => {
+        setTasks(d.tasks ?? [])
+        setTasksError(false)
+      })
+      .catch((err) => {
+        console.error('[HQPanel] tasks error:', err)
+        setTasksError(true)
+      })
 
     fetch('/api/activity?limit=8')
-      .then((r) => r.json())
-      .then((d: { activity: Activity[] }) => setActivity(d.activity ?? []))
-      .catch((err) => console.error('[HQPanel] activity error:', err))
-  }
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((d: { activity: Activity[] }) => {
+        setActivity(d.activity ?? [])
+        setActivityError(false)
+      })
+      .catch((err) => {
+        console.error('[HQPanel] activity error:', err)
+        setActivityError(true)
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   useEffect(() => {
     load()
     const interval = setInterval(load, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [load])
 
   const totalToday = tasks.filter((t) => isToday(t.created_at)).length
   const completed = tasks.filter((t) => t.status === 'done').length
@@ -71,9 +93,9 @@ export default function HQPanel({ agents, onNavigateToChat }: HQPanelProps) {
       <div className={styles.metrics}>
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>Tasks Today</span>
-          <span className={styles.metricValue}>{totalToday}</span>
+          <span className={styles.metricValue}>{loading ? '—' : totalToday}</span>
           <span className={styles.metricSub}>
-            {completed > 0 ? `${completed} completed` : 'none completed yet'}
+            {loading ? 'Loading...' : completed > 0 ? `${completed} completed` : 'none completed yet'}
           </span>
         </div>
 
@@ -85,21 +107,21 @@ export default function HQPanel({ agents, onNavigateToChat }: HQPanelProps) {
 
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>Pending Review</span>
-          <span className={styles.metricValue}>{pendingReview}</span>
-          {pendingReview > 0 ? (
+          <span className={styles.metricValue}>{loading ? '—' : pendingReview}</span>
+          {!loading && pendingReview > 0 ? (
             <span className={styles.metricSubAmber}>Needs your approval</span>
           ) : (
-            <span className={styles.metricSub}>Nothing pending</span>
+            <span className={styles.metricSub}>{loading ? 'Loading...' : 'Nothing pending'}</span>
           )}
         </div>
 
         <div className={styles.metricCard}>
           <span className={styles.metricLabel}>Sprint Progress</span>
-          <span className={styles.metricValue}>{sprintProgress}%</span>
+          <span className={styles.metricValue}>{loading ? '—' : `${sprintProgress}%`}</span>
           <div className={styles.progressBar}>
             <div
               className={styles.progressFill}
-              style={{ width: `${sprintProgress}%` }}
+              style={{ width: loading ? '0%' : `${sprintProgress}%` }}
             />
           </div>
         </div>
@@ -112,10 +134,12 @@ export default function HQPanel({ agents, onNavigateToChat }: HQPanelProps) {
             <span className={styles.badge}>real-time</span>
           </div>
           <div className={styles.activityList}>
-            {activity.length === 0 ? (
-              <p className={styles.empty}>
-                No activity yet — start chatting with an agent
-              </p>
+            {activityError ? (
+              <p className={styles.errorMsg}>Failed to load activity — refresh to retry</p>
+            ) : loading ? (
+              <p className={styles.empty}>Loading...</p>
+            ) : activity.length === 0 ? (
+              <p className={styles.empty}>No activity yet — start chatting with an agent</p>
             ) : (
               activity.map((item) => {
                 const agent = agents.find((a) => a.id === item.agent_id)
@@ -146,6 +170,9 @@ export default function HQPanel({ agents, onNavigateToChat }: HQPanelProps) {
             <span className={styles.badge}>{agents.length} agents</span>
           </div>
           <div className={styles.agentStatusList}>
+            {tasksError && (
+              <p className={styles.errorMsg}>Failed to load data — refresh to retry</p>
+            )}
             {agents.map((agent) => (
               <button
                 key={agent.id}
