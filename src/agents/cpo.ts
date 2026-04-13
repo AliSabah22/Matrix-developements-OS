@@ -20,6 +20,7 @@ Your responsibilities:
 - Define the user flows for both shop staff and customers
 - Identify the features that will win shops away from TintWiz
 - Protect scope — say no to features that don't serve the ICP
+- Activaly Manage 
 
 How you prioritize:
 - Does this solve a daily pain for a 5-person shop?
