@@ -1,9 +1,8 @@
 // src/lib/prompt-builder.ts
-// Compiles the full system prompt for a given agent from wiki pages + skills
+// Compiles the full system prompt for an agent from wiki pages + skills
 
-import { AgentConfig, AGENT_CONFIGS, AgentId } from "@/config/agents";
-import { loadWikiPages, loadSkills, loadWikiPage } from "./wiki-loader";
 import { AgentConfig, AGENT_CONFIGS, AgentId, PROJECT_REPOS, CODE_CAPABLE_AGENTS } from "@/config/agents";
+import { loadWikiPages, loadSkills } from "./wiki-loader";
 
 export interface PromptBuildOptions {
   agentId: AgentId;
@@ -47,7 +46,10 @@ export async function buildSystemPrompt(
   // 4. Load skills
   const skillsContext = await loadSkills(config.skills);
 
-  // 5. Compile the final prompt
+  // 5. Build codebase access block (only for code-capable agents)
+  const codebaseBlock = buildCodebaseAccessBlock(options.agentId, options.selectedProjects);
+
+  // 6. Compile the final prompt
   const systemPrompt = `${identity}
 
 === INSTITUTIONAL KNOWLEDGE (from Matrix Brain wiki) ===
@@ -59,7 +61,7 @@ ${projectContext}
 === SKILLS & EXPERTISE ===
 The following skills define your domain expertise. Follow their frameworks and use their tools.
 ${skillsContext}
-
+${codebaseBlock}
 === OPERATING RULES ===
 1. You are an employee of Matrix Developments. The two co-founders have final authority on all decisions.
 2. Stay within your defined responsibilities. If a task falls outside your lane, recommend which agent should handle it.
@@ -71,6 +73,54 @@ ${skillsContext}
 ${options.additionalContext ? `\n=== ADDITIONAL CONTEXT ===\n${options.additionalContext}` : ""}`;
 
   return systemPrompt;
+}
+
+/**
+ * Build the codebase access block for agents with GitHub repo access.
+ *
+ * Returns an empty string for non-code agents or when no projects are selected.
+ * Otherwise returns a section that tells the agent which repos to access and
+ * the exact branching/PR workflow to follow.
+ */
+export function buildCodebaseAccessBlock(
+  agentId: AgentId,
+  selectedProjects?: string[]
+): string {
+  if (!CODE_CAPABLE_AGENTS.has(agentId)) return "";
+  if (!selectedProjects?.length) return "";
+
+  const config = AGENT_CONFIGS[agentId];
+  const codename = config.name.toLowerCase();
+
+  const repoLines = selectedProjects
+    .map((slug) => {
+      const repo = PROJECT_REPOS[slug];
+      if (!repo) return null;
+      return `  - ${repo.description}\n    Repo: ${repo.owner}/${repo.repo}  |  Default branch: ${repo.defaultBranch}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  if (!repoLines) return "";
+
+  return `
+=== CODEBASE ACCESS ===
+You have GitHub access to the following repositories for this session:
+
+${repoLines}
+
+Workflow — follow this every time you touch code:
+1. Read the repo structure first (file tree, README, package.json) to understand existing patterns before writing anything.
+2. Never write code that contradicts the existing stack, naming conventions, or folder structure.
+3. Create a feature branch before making any changes:
+   Branch name format: feature/${codename}/{short-task-description}
+   Example: feature/${codename}/add-job-status-endpoint
+4. Commit with clear messages describing what changed and why.
+5. Open a pull request targeting the default branch when the work is ready for review.
+6. Never push directly to main or dev. Never merge without explicit founder approval.
+7. Never access repositories outside the Matrix Developments organisation listed above.
+
+`;
 }
 
 /**
