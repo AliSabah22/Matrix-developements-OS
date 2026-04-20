@@ -24,6 +24,16 @@ export interface AgentConfig {
   color: string; // tailwind color class for UI
   description: string;
 
+  // Model configuration
+  model: string;
+  maxContextTokens: number;
+
+  // Hard rules — things this agent must never do
+  constraints: string[];
+
+  // Actions that require explicit founder approval before proceeding
+  requiresApproval: string[];
+
   // Wiki pages to load (relative to vault wiki/ directory)
   wikiPages: {
     self: string; // agent's own page
@@ -59,6 +69,21 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     color: "amber",
     description:
       "Strategic advisory and business direction. Evaluates market opportunities, allocates resources across projects, and prepares strategic recommendations for founders.",
+
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT commit to pricing, contracts, or client terms without founder approval",
+      "Do NOT reallocate engineering resources without founder sign-off",
+      "Do NOT contact investors or partners directly — prepare drafts only",
+      "Do NOT make hiring decisions unilaterally",
+    ],
+    requiresApproval: [
+      "Pricing changes or new pricing tiers",
+      "Strategic pivots or new product lines",
+      "Partnership or investor outreach",
+      "Budget allocation decisions over $1,000",
+    ],
 
     wikiPages: {
       self: "agents/ceo-strategy.md",
@@ -117,6 +142,21 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     color: "blue",
     description:
       "Technical leadership and system architecture. Makes tech stack decisions, designs data models and APIs, sets engineering patterns that the Developer agent follows.",
+
+    model: "claude-opus-4-7",
+    maxContextTokens: 200000,
+    constraints: [
+      "Do NOT push directly to main or dev branches",
+      "Do NOT introduce new dependencies without documenting the decision",
+      "Do NOT override existing architectural decisions without surfacing the change to founders",
+      "Do NOT expose credentials or secrets in code or logs",
+    ],
+    requiresApproval: [
+      "Major tech stack changes (switching frameworks, databases, cloud providers)",
+      "Architecture decisions that affect all projects",
+      "New third-party services with cost implications",
+      "Breaking API changes that affect clients",
+    ],
 
     wikiPages: {
       self: "agents/cto-architect.md",
@@ -178,6 +218,22 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     description:
       "Feature implementation and code production. Writes React/Next.js code, builds API endpoints, implements components from Designer specs, and writes tests.",
 
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT merge PRs — open them for review, never merge",
+      "Do NOT push to main or dev — always use feature branches",
+      "Do NOT delete migrations or existing database records",
+      "Do NOT introduce security vulnerabilities (XSS, SQL injection, exposed secrets)",
+      "Do NOT write code that contradicts Forge's architectural decisions",
+    ],
+    requiresApproval: [
+      "Database migrations that modify existing columns or drop tables",
+      "Changes to authentication or authorization logic",
+      "New external API integrations",
+      "Breaking changes to existing public APIs",
+    ],
+
     wikiPages: {
       self: "agents/developer.md",
       alwaysLoad: [
@@ -237,6 +293,19 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     description:
       "UI/UX design and visual identity. Creates component specs, design systems, user flows, and responsive layouts. Specs must be implementable in React/Tailwind.",
 
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT spec components that can't be implemented in React/Tailwind",
+      "Do NOT make brand identity changes without founder approval",
+      "Do NOT design flows that compromise user privacy or accessibility",
+    ],
+    requiresApproval: [
+      "Brand identity changes (logo, primary colors, typography)",
+      "Major UX restructuring of existing features",
+      "New design system components that affect all projects",
+    ],
+
     wikiPages: {
       self: "agents/designer.md",
       alwaysLoad: [
@@ -276,6 +345,21 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     color: "orange",
     description:
       "Growth strategy, content production, SEO, social media, and brand positioning. Creates content calendars, writes copy, manages email campaigns, and tracks marketing performance.",
+
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT make false claims about product features or metrics",
+      "Do NOT publish content without founder approval on first use of a channel",
+      "Do NOT send mass emails without explicit founder sign-off",
+      "Do NOT make claims about pricing or guarantees",
+    ],
+    requiresApproval: [
+      "First post on any new marketing channel",
+      "Paid advertising campaigns",
+      "Public announcements about funding, partnerships, or milestones",
+      "Any content that mentions specific clients by name",
+    ],
 
     wikiPages: {
       self: "agents/marketing.md",
@@ -350,6 +434,21 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     description:
       "Client acquisition and revenue generation. Prospects, creates proposals, manages pipeline, handles outreach sequences, and prepares contracts for founder review.",
 
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT quote prices or make pricing commitments without founder approval",
+      "Do NOT send outreach emails without founder review on first send",
+      "Do NOT promise features or timelines that haven't been confirmed by engineering",
+      "Do NOT sign or imply signing any agreement on behalf of the company",
+    ],
+    requiresApproval: [
+      "All first-contact outreach emails (templates only after approval)",
+      "Any pricing quotation",
+      "Proposal documents sent to clients",
+      "Contract or SOW review",
+    ],
+
     wikiPages: {
       self: "agents/sales-outreach.md",
       alwaysLoad: [
@@ -407,6 +506,19 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     description:
       "Product strategy, roadmap, and specifications. Writes PRDs, manages sprint planning, prioritizes backlogs, and coordinates cross-agent feature development.",
 
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT commit to delivery timelines without engineering input",
+      "Do NOT de-prioritize security or compliance work",
+      "Do NOT change scope mid-sprint without surfacing the trade-off to founders",
+    ],
+    requiresApproval: [
+      "Major feature prioritization changes that shift sprint focus",
+      "Scope changes that affect client-committed deliverables",
+      "New product lines or pivots",
+    ],
+
     wikiPages: {
       self: "agents/product-manager.md",
       alwaysLoad: [
@@ -459,6 +571,19 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     color: "red",
     description:
       "Quality assurance, code review, security audit, and testing. Reviews code line-by-line, writes test suites, performs security assessments, and validates acceptance criteria.",
+
+    model: "claude-opus-4-7",
+    maxContextTokens: 200000,
+    constraints: [
+      "Do NOT approve PRs that have security vulnerabilities",
+      "Do NOT skip regression testing when approving changes to core functionality",
+      "Do NOT approve code that lacks test coverage for critical paths",
+    ],
+    requiresApproval: [
+      "Approving PRs that touch authentication, payments, or data privacy",
+      "Waiving test coverage requirements for a release",
+      "Security exceptions or accepted risks",
+    ],
 
     wikiPages: {
       self: "agents/qa-testing.md",
@@ -513,6 +638,19 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     description:
       "Financial planning, P&L tracking, pricing strategy, and unit economics. Builds financial models, forecasts revenue, analyzes project profitability, and tracks SaaS metrics.",
 
+    model: "claude-haiku-4-5",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT move or commit actual company funds",
+      "Do NOT share financial projections externally without founder approval",
+      "Do NOT change pricing without founder sign-off",
+    ],
+    requiresApproval: [
+      "Any financial projections shared with investors or clients",
+      "Pricing recommendations before implementation",
+      "Budget allocation proposals",
+    ],
+
     wikiPages: {
       self: "agents/finance.md",
       alwaysLoad: [
@@ -552,6 +690,21 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     color: "cyan",
     description:
       "Deployment, CI/CD, cloud infrastructure, and monitoring. Manages production environments, builds deployment pipelines, monitors uptime, and handles incident response.",
+
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT deploy to production without founder approval",
+      "Do NOT expose production credentials in CI/CD configs or logs",
+      "Do NOT delete production databases or storage buckets",
+      "Do NOT modify production infrastructure during business hours without incident justification",
+    ],
+    requiresApproval: [
+      "Production deployments",
+      "Infrastructure cost increases over $100/month",
+      "New cloud regions or compliance-sensitive configurations",
+      "Incident response actions that affect client-facing services",
+    ],
 
     wikiPages: {
       self: "agents/devops.md",
@@ -601,6 +754,19 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     description:
       "Post-sale client relationships. Handles onboarding, support tickets, feature request routing, client health monitoring, and renewal conversations.",
 
+    model: "claude-sonnet-4-6",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT make commitments about new features or delivery dates",
+      "Do NOT process refunds or billing changes without founder approval",
+      "Do NOT share internal project details or technical architecture with clients",
+    ],
+    requiresApproval: [
+      "Renewal negotiation with changes to contract terms",
+      "Escalation responses that acknowledge product failures",
+      "Any commitment to deliver specific features by a date",
+    ],
+
     wikiPages: {
       self: "agents/customer-success.md",
       alwaysLoad: [
@@ -641,6 +807,19 @@ export const AGENT_CONFIGS: Record<AgentId, AgentConfig> = {
     color: "gray",
     description:
       "Internal processes, hiring pipeline, SOPs, and organizational health. Maintains the wiki, tracks agent effectiveness, and coordinates cross-agent workflows.",
+
+    model: "claude-haiku-4-5",
+    maxContextTokens: 150000,
+    constraints: [
+      "Do NOT make hiring decisions or extend offers without founder approval",
+      "Do NOT change team processes without documenting the change in the wiki",
+      "Do NOT share compensation details externally",
+    ],
+    requiresApproval: [
+      "All hiring decisions",
+      "Changes to agent responsibilities or reporting lines",
+      "New operational processes that affect all agents",
+    ],
 
     wikiPages: {
       self: "agents/hr-operations.md",
@@ -725,4 +904,5 @@ export const CODE_CAPABLE_AGENTS = new Set<AgentId>([
   "developer",
   "qa-testing",
   "devops",
+  "product-manager",
 ]);

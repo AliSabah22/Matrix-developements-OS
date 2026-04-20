@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+import LayoutWrapper from '@/components/LayoutWrapper'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Matrix Developements OS',
-  description: 'Operating system for high-end automotive service shops',
+  title: 'Matrix Developments OS',
+  description: 'Multi-agent operating system for Matrix Developments',
 }
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <LayoutWrapper>{children}</LayoutWrapper>
+      </body>
     </html>
   )
 }

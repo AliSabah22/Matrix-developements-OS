@@ -2,7 +2,7 @@
 // Compiles the full system prompt for an agent from wiki pages + skills
 
 import { AgentConfig, AGENT_CONFIGS, AgentId, PROJECT_REPOS, CODE_CAPABLE_AGENTS } from "@/config/agents";
-import { loadWikiPages, loadSkills } from "./wiki-loader";
+import { loadWikiPages, loadSkills, loadSoul } from "./wiki-loader";
 
 export interface PromptBuildOptions {
   agentId: AgentId;
@@ -23,10 +23,13 @@ export async function buildSystemPrompt(
   const config = AGENT_CONFIGS[options.agentId];
   if (!config) throw new Error(`Unknown agent: ${options.agentId}`);
 
-  // 1. Build the identity header
+  // 1. Load soul file (personality & voice — loaded first, highest priority)
+  const soul = await loadSoul(options.agentId);
+
+  // 2. Build the identity header
   const identity = buildIdentityBlock(config);
 
-  // 2. Load always-on wiki pages (index + agent's own page + company pages)
+  // 3. Load always-on wiki pages (index + agent's own page + company pages)
   const alwaysLoadPaths = [config.wikiPages.self, ...config.wikiPages.alwaysLoad];
   const coreContext = await loadWikiPages(alwaysLoadPaths);
 
@@ -43,14 +46,22 @@ export async function buildSystemPrompt(
       "\n[No specific project selected. Refer to index.md for project list. Ask the founder which project to focus on.]\n";
   }
 
-  // 4. Load skills
+  // 5. Load skills
   const skillsContext = await loadSkills(config.skills);
 
-  // 5. Build codebase access block (only for code-capable agents)
+  // 6. Build codebase access block (only for code-capable agents)
   const codebaseBlock = buildCodebaseAccessBlock(options.agentId, options.selectedProjects);
 
-  // 6. Compile the final prompt
+  // 7. Build constraints block
+  const constraintsBlock = buildConstraintsBlock(config);
+
+  // 8. Compile the final prompt — soul goes first, defines HOW to communicate
+  const soulBlock = soul ? `\n=== PERSONALITY & VOICE ===\n${soul}\n` : "";
+
   const systemPrompt = `${identity}
+${soulBlock}
+=== CRITICAL RESPONSE RULE ===
+Never include code, code blocks, or implementation details in your responses UNLESS the founder explicitly asks for code. When asked for summaries, status updates, explanations, strategic analysis, or any general question, respond in plain English prose. Code is reserved for explicit implementation requests only. This rule overrides all other defaults.
 
 === INSTITUTIONAL KNOWLEDGE (from Matrix Brain wiki) ===
 ${coreContext}
@@ -70,6 +81,15 @@ ${codebaseBlock}
 5. If you need information that should be in the wiki but isn't, flag it: "This should be documented in [wiki page]."
 6. Never commit the company to pricing, timelines, or scope without noting it needs founder approval.
 7. When working on a specific project, stay focused on that project unless asked about cross-project concerns.
+
+=== PERFORMANCE RULES ===
+1. Check the wiki first — before answering any question about the company, projects, or processes, look at what you loaded from the vault.
+2. Flag missing info — if information needed for this task is absent from the wiki, say: "This should be in the wiki at [suggested page]."
+3. Load only what you need — don't reference wiki pages or skills that aren't relevant to this task.
+4. Prefer focused responses — be direct and actionable. Avoid lengthy preambles.
+5. Log external tool calls — if you use MCP tools, briefly note what you're doing and why.
+6. Track multi-step work — for complex tasks, outline the steps you're taking at the start.
+${constraintsBlock}
 ${options.additionalContext ? `\n=== ADDITIONAL CONTEXT ===\n${options.additionalContext}` : ""}`;
 
   return systemPrompt;
@@ -121,6 +141,28 @@ Workflow — follow this every time you touch code:
 7. Never access repositories outside the Matrix Developments organisation listed above.
 
 `;
+}
+
+/**
+ * Build the constraints block — hard rules and approval requirements for this agent
+ */
+function buildConstraintsBlock(config: AgentConfig): string {
+  if (!config.constraints?.length && !config.requiresApproval?.length) return "";
+
+  const lines: string[] = ["\n=== YOUR CONSTRAINTS ==="];
+
+  if (config.constraints?.length) {
+    lines.push("Hard rules — never violate these:");
+    config.constraints.forEach((c) => lines.push(`- ${c}`));
+  }
+
+  if (config.requiresApproval?.length) {
+    lines.push("\nActions requiring explicit founder approval before proceeding:");
+    config.requiresApproval.forEach((a) => lines.push(`- ${a}`));
+    lines.push('\nWhen you need approval, say: "This requires founder approval: [reason]. Here is what I\'ve prepared for their review:"');
+  }
+
+  return lines.join("\n");
 }
 
 /**

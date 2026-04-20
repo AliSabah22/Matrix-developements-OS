@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import { AGENT_CONFIGS } from '@/config/agents'
 import type { AgentId } from '@/config/agents'
 import ProjectSelector from '@/components/project-selector'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import styles from './page.module.css'
 
 const COLORS: Record<string, string> = {
@@ -27,6 +28,7 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   isError?: boolean
+  streaming?: boolean
 }
 
 export default function AgentChatPage() {
@@ -34,7 +36,6 @@ export default function AgentChatPage() {
   const rawId = Array.isArray(params.agentId) ? params.agentId[0] : (params.agentId as string)
   const agentId = rawId as AgentId
 
-  // All hooks before any conditional render
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,8 +46,8 @@ export default function AgentChatPage() {
   ])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  // Reset conversation when agent changes
   useEffect(() => {
     setMessages([])
     setInput('')
@@ -79,10 +80,14 @@ export default function AgentChatPage() {
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     setInput('')
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setLoading(true)
+
+    // Add empty streaming assistant message
+    setMessages((prev) => [...prev, { role: 'assistant', content: '', streaming: true }])
+
+    const abort = new AbortController()
+    abortRef.current = abort
 
     try {
       const res = await fetch('/api/chat', {
@@ -93,26 +98,82 @@ export default function AgentChatPage() {
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
           selectedProjects,
         }),
+        signal: abort.signal,
       })
 
-      if (!res.ok) {
-        const err = (await res.json()) as { error?: string }
-        throw new Error(err.error ?? `HTTP ${res.status}`)
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`)
       }
 
-      const data = (await res.json()) as { response: string }
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.response }])
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const data = JSON.parse(line.slice(6)) as {
+              type: string
+              text?: string
+              message?: string
+            }
+            if (data.type === 'text' && data.text) {
+              setMessages((prev) => {
+                const updated = [...prev]
+                const last = updated[updated.length - 1]
+                if (last?.role === 'assistant') {
+                  updated[updated.length - 1] = { ...last, content: last.content + data.text }
+                }
+                return updated
+              })
+            } else if (data.type === 'error') {
+              setMessages((prev) => {
+                const updated = [...prev]
+                updated[updated.length - 1] = {
+                  role: 'assistant',
+                  content: data.message ?? 'Something went wrong.',
+                  isError: true,
+                }
+                return updated
+              })
+            }
+          } catch {
+            // malformed SSE line, skip
+          }
+        }
+      }
+
+      // Mark streaming complete
+      setMessages((prev) => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last?.role === 'assistant' && last.streaming) {
+          updated[updated.length - 1] = { ...last, streaming: false }
+        }
+        return updated
+      })
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
+      if ((err as Error).name === 'AbortError') return
+      setMessages((prev) => {
+        const updated = [...prev]
+        updated[updated.length - 1] = {
           role: 'assistant',
           content: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
           isError: true,
-        },
-      ])
+        }
+        return updated
+      })
     } finally {
       setLoading(false)
+      abortRef.current = null
     }
   }
 
@@ -125,6 +186,7 @@ export default function AgentChatPage() {
 
   return (
     <div className={styles.page}>
+      <Breadcrumbs crumbs={[{ label: 'Home', href: '/' }, { label: 'Agents', href: '/agents' }, { label: config.name }]} />
       {/* Header */}
       <div className={styles.agentHeader}>
         <div className={styles.agentHeaderLeft}>
@@ -154,7 +216,7 @@ export default function AgentChatPage() {
       )}
 
       {/* Message list */}
-      {(messages.length > 0 || loading) && (
+      {messages.length > 0 && (
         <div className={styles.messageList}>
           {messages.map((msg, i) => {
             const isUser = msg.role === 'user'
@@ -185,7 +247,10 @@ export default function AgentChatPage() {
                     {isUser ? (
                       msg.content
                     ) : (
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <>
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        {msg.streaming && <span className={styles.cursor} />}
+                      </>
                     )}
                   </div>
                 </div>
@@ -194,33 +259,11 @@ export default function AgentChatPage() {
             )
           })}
 
-          {loading && (
-            <div className={`${styles.messageRow} ${styles.rowAgent}`}>
-              <div
-                className={styles.msgAvatar}
-                style={{ backgroundColor: `${color}22`, color }}
-              >
-                {config.avatar}
-              </div>
-              <div className={styles.messageGroup}>
-                <span className={styles.senderLabel}>{config.name}</span>
-                <div className={`${styles.bubble} ${styles.bubbleAgent}`}>
-                  <div className={styles.typing}>
-                    <span className={styles.typingDot} />
-                    <span className={styles.typingDot} />
-                    <span className={styles.typingDot} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
       )}
 
-      {/* Spacer ref when empty state is showing */}
-      {messages.length === 0 && !loading && <div ref={messagesEndRef} />}
+      {messages.length === 0 && <div ref={messagesEndRef} />}
 
       {/* Input */}
       <div className={styles.inputArea}>

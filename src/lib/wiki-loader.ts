@@ -49,6 +49,21 @@ export async function listProjects(): Promise<string[]> {
 }
 
 /**
+ * Load the SOUL file for an agent from wiki/souls/[agent-id].md
+ * Returns empty string (not an error) if the file doesn't exist yet.
+ */
+export async function loadSoul(agentId: string): Promise<string> {
+  const fullPath = join(VAULT_PATH, "wiki", "souls", `${agentId}.md`);
+  try {
+    const content = await readFile(fullPath, "utf-8");
+    return content;
+  } catch {
+    // Soul file not required — silently return empty
+    return "";
+  }
+}
+
+/**
  * Load multiple wiki pages at once and concatenate them
  * Each page is wrapped with a header showing the source file
  */

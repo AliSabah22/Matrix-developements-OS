@@ -1,0 +1,37 @@
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  padding: 0 0 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.sep {
+  margin: 0 6px;
+  color: var(--text4);
+  user-select: none;
+}
+
+.link {
+  color: var(--text3);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.link:hover {
+  color: var(--text);
+}
+
+.current {
+  color: var(--text2);
+  font-weight: 500;
+}

@@ -1,0 +1,571 @@
+/* ============================================================
+   Orchestrate page — readable, centered, generous typography
+   ============================================================ */
+
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 40px 32px 60px;
+  gap: 28px;
+}
+
+/* Constrain all content to a readable width */
+.page > * {
+  max-width: 768px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  flex-shrink: 0;
+}
+
+.header {
+  /* inherits max-width from above */
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   Input card
+   ============================================================ */
+
+.inputCard {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.requestInput {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 14px 16px;
+  resize: vertical;
+  min-height: 96px;
+  outline: none;
+  transition: border-color 0.15s;
+  line-height: 1.6;
+}
+
+.requestInput:focus {
+  border-color: var(--border3);
+}
+
+.requestInput::placeholder {
+  color: var(--text3);
+}
+
+.requestInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.projectSelect {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.projectSelect:disabled {
+  opacity: 0.5;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.runBtn {
+  height: 40px;
+  padding: 0 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+
+.runBtn:hover:not(.runBtnDisabled) { opacity: 0.85; }
+
+.runBtnDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stopBtn {
+  height: 40px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.stopBtn:hover { background: var(--red-dim); }
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   Log section
+   ============================================================ */
+
+.logSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.logFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Init line */
+.logInit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text4);
+  font-family: var(--font-mono);
+}
+
+.logIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Plan card
+   ============================================================ */
+
+.logPlan {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+
+.logPlanHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+  margin-bottom: 10px;
+}
+
+.logReasoning {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.logAgentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agentChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+}
+
+.agentChipAvatar {
+  font-size: 15px;
+}
+
+/* ============================================================
+   Agent response card — the core readable unit
+   ============================================================ */
+
+.logAgent {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.logAgentHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logAgentAvatarWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg3);
+  font-size: 20px;
+}
+
+.logAgentMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.logAgentName {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.logAgentTitle {
+  display: block;
+  font-size: 12px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+.logAgentStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.streamingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.doneBadge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.taskLabel {
+  font-size: 12px;
+  color: var(--text3);
+  font-style: italic;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Agent prose output — readable typography */
+.logAgentOutput {
+  padding: 24px 28px;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.75;
+  font-family: var(--font-body);
+}
+
+/* Prose elements */
+.logAgentOutput :global(h1) {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 20px 0 10px;
+  line-height: 1.3;
+}
+
+.logAgentOutput :global(h2) {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 18px 0 8px;
+}
+
+.logAgentOutput :global(h3) {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 16px 0 6px;
+}
+
+.logAgentOutput :global(p) {
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.logAgentOutput :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.logAgentOutput :global(ul),
+.logAgentOutput :global(ol) {
+  margin: 8px 0 12px 20px;
+}
+
+.logAgentOutput :global(li) {
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+.logAgentOutput :global(strong) {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.logAgentOutput :global(em) {
+  color: var(--text2);
+}
+
+.logAgentOutput :global(blockquote) {
+  border-left: 3px solid var(--accent);
+  padding-left: 16px;
+  color: var(--text2);
+  font-style: italic;
+  margin: 12px 0;
+}
+
+.logAgentOutput :global(hr) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+.logAgentOutput :global(code) {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg4);
+  color: var(--accent2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.logAgentOutput :global(pre) {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.logAgentOutput :global(pre code) {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.logAgentOutput :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.logAgentOutput :global(th) {
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border2);
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logAgentOutput :global(td) {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+}
+
+.logAgentOutput :global(tr:last-child td) {
+  border-bottom: none;
+}
+
+/* ============================================================
+   Summary card — visually distinct, larger
+   ============================================================ */
+
+.logSummary {
+  background: var(--bg2);
+  border: 2px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.logSummary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.logSummaryHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent2);
+  border-bottom: 1px solid var(--accent-border);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: var(--font-mono);
+  background: var(--accent-dim);
+}
+
+.logSummaryContent {
+  padding: 28px 32px;
+  font-size: 16px;
+  color: var(--text);
+  line-height: 1.8;
+}
+
+.logSummaryContent :global(h1),
+.logSummaryContent :global(h2),
+.logSummaryContent :global(h3) {
+  font-family: var(--font-display);
+  color: var(--text);
+  margin: 16px 0 8px;
+}
+
+.logSummaryContent :global(h2) { font-size: 18px; font-weight: 700; }
+.logSummaryContent :global(h3) { font-size: 16px; font-weight: 600; }
+
+.logSummaryContent :global(p) { margin-bottom: 14px; }
+.logSummaryContent :global(p:last-child) { margin-bottom: 0; }
+.logSummaryContent :global(ul),
+.logSummaryContent :global(ol) { margin: 8px 0 14px 22px; }
+.logSummaryContent :global(li) { margin-bottom: 8px; line-height: 1.7; }
+.logSummaryContent :global(strong) { font-weight: 700; }
+
+/* ============================================================
+   Error
+   ============================================================ */
+
+.logError {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--red);
+  line-height: 1.5;
+}
+
+/* Streaming cursor */
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: currentColor;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

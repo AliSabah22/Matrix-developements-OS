@@ -1,9 +1,12 @@
 // src/app/api/chat/route.ts
-// Claude API endpoint — builds dynamic system prompts from the wiki and routes MCP servers per agent
+// Streaming Claude API endpoint — builds dynamic system prompts from the vault
 
-import { NextRequest, NextResponse } from "next/server";
-import { buildSystemPrompt, getMcpServers } from "@/lib/prompt-builder";
-import { AgentId } from "@/config/agents";
+import { NextRequest } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { buildSystemPrompt } from "@/lib/prompt-builder";
+import { AgentId, AGENT_CONFIGS } from "@/config/agents";
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,73 +21,66 @@ export async function POST(request: NextRequest) {
       selectedProjects?: string[];
     } = body;
 
-    // 1. Build the system prompt dynamically from the wiki
-    const systemPrompt = await buildSystemPrompt({
-      agentId,
-      selectedProjects,
-    });
+    const systemPrompt = await buildSystemPrompt({ agentId, selectedProjects });
+    const agentConfig = AGENT_CONFIGS[agentId];
+    const model = agentConfig?.model ?? "claude-sonnet-4-6";
 
-    // 2. Get MCP servers for this agent
-    const mcpServers = getMcpServers(agentId);
+    const encoder = new TextEncoder();
 
-    // 3. Call Claude API
-    // Note: mcp_servers is not supported in the standard messages API.
-    // MCP server config is stored in agents.ts for future use when the
-    // Claude API supports remote MCP connections per-request.
-    void mcpServers; // referenced for future use
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const sdkStream = client.messages.stream({
+            model,
+            max_tokens: 4096,
+            system: systemPrompt,
+            messages,
+          });
 
-    const apiBody = {
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages,
-    };
+          for await (const event of sdkStream) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              const data = JSON.stringify({
+                type: "text",
+                text: event.delta.text,
+              });
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            }
+          }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY!,
-        "anthropic-version": "2023-06-01",
+          const finalMsg = await sdkStream.finalMessage();
+          const done = JSON.stringify({
+            type: "done",
+            usage: finalMsg.usage,
+            model: finalMsg.model,
+          });
+          controller.enqueue(encoder.encode(`data: ${done}\n\n`));
+        } catch (err) {
+          const errData = JSON.stringify({
+            type: "error",
+            message: err instanceof Error ? err.message : String(err),
+          });
+          controller.enqueue(encoder.encode(`data: ${errData}\n\n`));
+        } finally {
+          controller.close();
+        }
       },
-      body: JSON.stringify(apiBody),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Claude API error:", error);
-      return NextResponse.json(
-        { error: "Failed to get response from Claude" },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-
-    // 4. Extract text content from response (handling MCP tool results too)
-    const textContent = data.content
-      .filter((block: { type: string }) => block.type === "text")
-      .map((block: { text: string }) => block.text)
-      .join("\n");
-
-    // Extract any MCP tool results
-    const toolResults = data.content
-      .filter((block: { type: string }) => block.type === "mcp_tool_result")
-      .map((block: { content?: { text?: string }[] }) =>
-        block.content?.[0]?.text || ""
-      );
-
-    return NextResponse.json({
-      response: textContent,
-      toolResults,
-      model: data.model,
-      usage: data.usage,
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

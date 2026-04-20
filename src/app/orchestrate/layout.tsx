@@ -1,7 +1,7 @@
 import GlobalNav from '@/components/GlobalNav'
-import styles from './layout.module.css'
+import styles from '../agents/layout.module.css'
 
-export default function AgentsLayout({ children }: { children: React.ReactNode }) {
+export default function OrchestrateLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={styles.layout}>
       <GlobalNav />
