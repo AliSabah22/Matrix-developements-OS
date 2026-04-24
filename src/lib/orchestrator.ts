@@ -88,9 +88,14 @@ Respond with this exact JSON shape:
     .map((b) => b.text)
     .join("");
 
-  // Parse JSON — strip any accidental markdown fences
-  const cleaned = text.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-  const parsed = JSON.parse(cleaned) as {
+  // Strip markdown fences, then extract the JSON object itself so any
+  // trailing prose Claude appends after the closing ``` is ignored.
+  const stripped = text.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error(`Planner returned no JSON object. Raw response: ${text.slice(0, 200)}`);
+  }
+  const parsed = JSON.parse(jsonMatch[0]) as {
     reasoning: string;
     agents: { agentId: string; task: string }[];
   };
@@ -134,7 +139,7 @@ async function runAgent(
   let fullOutput = "";
 
   const stream = client.messages.stream({
-    model: "claude-sonnet-4-6",
+    model: AGENT_CONFIGS[agentId]?.model ?? "claude-sonnet-4-6",
     max_tokens: 4096,
     system: systemPrompt,
     messages: [{ role: "user", content: task }],
