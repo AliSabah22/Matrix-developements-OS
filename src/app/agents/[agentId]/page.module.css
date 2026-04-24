@@ -26,6 +26,35 @@
   gap: 12px;
 }
 
+.agentHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.newChatBtn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.newChatBtn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border3);
+}
+
+.newChatBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .agentAvatar {
   width: 40px;
   height: 40px;

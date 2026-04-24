@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import { AGENT_CONFIGS } from '@/config/agents'
@@ -39,8 +39,6 @@ export default function AgentChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sessionLoading, setSessionLoading] = useState(true)
-  const [sessionId, setSessionId] = useState<string | null>(null)
   const [selectedProjects, setSelectedProjects] = useState<string[]>([
     'wraptors-saas',
     'archstudio',
@@ -50,50 +48,10 @@ export default function AgentChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  // Derive the single projectId for session scoping:
-  // null when "All Projects", otherwise the single selected slug.
-  const projectId = selectedProjects.length === 3 ? null : (selectedProjects[0] ?? null)
-
-  // Load the persistent session whenever the agent changes.
-  // Project changes don't reload the session — they only affect the system prompt context.
-  const loadSession = useCallback(async (aid: string) => {
-    setSessionLoading(true)
-    try {
-      const res = await fetch(`/api/sessions?agentId=${aid}`)
-      if (!res.ok) return
-      const data = await res.json()
-
-      // Find the most recent session for this agent (any project scope)
-      const latest = data.sessions?.[0]
-      if (latest) {
-        const fullRes = await fetch(`/api/sessions/${latest.id}`)
-        const fullData = await fullRes.json()
-        setSessionId(latest.id)
-        // Convert DB messages to the local format
-        const dbMsgs: Message[] = (fullData.session?.messages ?? []).map(
-          (m: { role: string; content: string }) => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          })
-        )
-        setMessages(dbMsgs)
-      } else {
-        setSessionId(null)
-        setMessages([])
-      }
-    } catch {
-      // DB might not be seeded yet — start fresh silently
-      setSessionId(null)
-      setMessages([])
-    } finally {
-      setSessionLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
+    setMessages([])
     setInput('')
-    loadSession(agentId)
-  }, [agentId, loadSession])
+  }, [agentId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -113,21 +71,6 @@ export default function AgentChatPage() {
   }
 
   const color = COLORS[config.color] ?? '#9ca3af'
-
-  const handleNewChat = async () => {
-    try {
-      const res = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, projectId }),
-      })
-      const data = await res.json()
-      setSessionId(data.session.id)
-      setMessages([])
-    } catch {
-      // Silently ignore — chat still works without persistence
-    }
-  }
 
   const handleSend = async () => {
     const text = input.trim()
@@ -154,8 +97,6 @@ export default function AgentChatPage() {
           agentId,
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
           selectedProjects,
-          sessionId,   // pass existing session so the route reuses it
-          projectId,   // for get-or-create if no sessionId yet
         }),
         signal: abort.signal,
       })
@@ -183,7 +124,6 @@ export default function AgentChatPage() {
               type: string
               text?: string
               message?: string
-              sessionId?: string
             }
             if (data.type === 'text' && data.text) {
               setMessages((prev) => {
@@ -194,11 +134,6 @@ export default function AgentChatPage() {
                 }
                 return updated
               })
-            } else if (data.type === 'done') {
-              // Capture the sessionId returned from the server
-              if (data.sessionId && !sessionId) {
-                setSessionId(data.sessionId)
-              }
             } else if (data.type === 'error') {
               setMessages((prev) => {
                 const updated = [...prev]
@@ -266,28 +201,11 @@ export default function AgentChatPage() {
             <span className={styles.agentTitle}>{config.title}</span>
           </div>
         </div>
-        <div className={styles.agentHeaderRight}>
-          <ProjectSelector value={selectedProjects} onChange={setSelectedProjects} />
-          <button
-            className={styles.newChatBtn}
-            onClick={handleNewChat}
-            disabled={loading}
-            title="Start a new conversation (keeps history)"
-          >
-            New Chat
-          </button>
-        </div>
+        <ProjectSelector value={selectedProjects} onChange={setSelectedProjects} />
       </div>
 
-      {/* Session loading state */}
-      {sessionLoading && (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyDesc}>Loading conversation…</div>
-        </div>
-      )}
-
       {/* Empty state */}
-      {!sessionLoading && messages.length === 0 && !loading && (
+      {messages.length === 0 && !loading && (
         <div className={styles.emptyState}>
           <div className={styles.emptyAvatar} style={{ backgroundColor: `${color}18`, color }}>
             {config.avatar}
@@ -298,7 +216,7 @@ export default function AgentChatPage() {
       )}
 
       {/* Message list */}
-      {!sessionLoading && messages.length > 0 && (
+      {messages.length > 0 && (
         <div className={styles.messageList}>
           {messages.map((msg, i) => {
             const isUser = msg.role === 'user'
@@ -353,17 +271,17 @@ export default function AgentChatPage() {
           <textarea
             ref={textareaRef}
             className={styles.textarea}
-            placeholder={`Message ${config.name}…`}
+            placeholder={`Message ${config.name}...`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            disabled={loading || sessionLoading}
+            disabled={loading}
           />
           <button
             className={`${styles.sendButton} ${loading || !input.trim() ? styles.sendDisabled : ''}`}
             onClick={handleSend}
-            disabled={loading || !input.trim() || sessionLoading}
+            disabled={loading || !input.trim()}
             aria-label="Send message"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
